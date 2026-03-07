@@ -17,6 +17,7 @@ container: vllm-node
 # Mod required to fix slowness and crash in the cluster (tracking https://github.com/vllm-project/vllm/issues/33857)
 mods:
   - mods/fix-qwen3-coder-next
+  - mods/fix-qwen3.5-chat-template
 
 # Default settings (can be overridden via CLI)
 defaults:
@@ -45,5 +46,6 @@ command: |
     --load-format fastsafetensors \
     --attention-backend flashinfer \
     --enable-prefix-caching \
+    --chat-template unsloth.jinja \
     -tp {tensor_parallel} \
     --distributed-executor-backend ray
