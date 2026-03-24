@@ -256,26 +256,26 @@ def check_image_exists(image: str, host: str | None = None) -> bool:
     Used to avoid redundant builds and to verify cluster nodes have the image.
     
     EXTENSIBILITY:
-    - To support other container runtimes (podman): Modify the docker command
     - To add image version/digest checking: Parse 'docker image inspect' JSON output
     - For custom SSH options: Modify the ssh command array
-    
+
     Args:
         image: Docker image tag to check (e.g., 'vllm-node-mxfp4')
         host: Optional remote hostname/IP. If None, checks locally.
-        
+
     Returns:
         True if image exists, False otherwise
     """
+    container_rt = os.environ.get("CONTAINER_RT", "docker")
     if host:
         result = subprocess.run(
-            ["ssh", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no", 
-             host, f"docker image inspect '{image}'"],
+            ["ssh", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no",
+             host, f"{container_rt} image inspect '{image}'"],
             capture_output=True
         )
     else:
         result = subprocess.run(
-            ["docker", "image", "inspect", image],
+            [container_rt, "image", "inspect", image],
             capture_output=True
         )
     return result.returncode == 0
