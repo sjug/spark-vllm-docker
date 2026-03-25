@@ -43,6 +43,7 @@ MEM_LIMIT_GB="110"
 MEM_SWAP_LIMIT_GB=""
 PIDS_LIMIT="4096"
 SHM_SIZE_GB="64"
+CLEANUP_MODE="false"
 
 # Function to print usage
 usage() {
@@ -69,6 +70,7 @@ usage() {
     echo "  --pids-limit    Process limit (default: 4096, only with --non-privileged)"
     echo "  --shm-size-gb   Shared memory size in GB (default: 64, only with --non-privileged)"
     echo "  --config        Path to .env configuration file (default: .env in script directory)"
+    echo "  --cleanup       Remove all *.whl and *.-commit files in wheels directory"
     echo "  action          start | stop | status | exec (Default: start). Not compatible with --launch-script."
     echo "  command         Command to run (only for 'exec' action). Not compatible with --launch-script."
     echo ""
@@ -129,6 +131,7 @@ while [[ "$#" -gt 0 ]]; do
         --pids-limit) PIDS_LIMIT="$2"; shift ;;
         --shm-size-gb) SHM_SIZE_GB="$2"; shift ;;
         -d) DAEMON_MODE="true" ;;
+        --cleanup) CLEANUP_MODE="true" ;;
         -h|--help) usage ;;
         --config) CONFIG_FILE="$2"; shift ;;
         start|stop|status) 
@@ -532,6 +535,31 @@ cleanup() {
 # Handle 'stop' action
 if [[ "$ACTION" == "stop" ]]; then
     cleanup
+    exit 0
+fi
+
+# Handle 'cleanup' action
+if [[ "$CLEANUP_MODE" == "true" ]]; then
+    WHEELS_DIR="$SCRIPT_DIR/wheels"
+    echo "Cleaning up wheels directory..."
+    
+    # Remove all .whl files
+    if compgen -G "$WHEELS_DIR/*.whl" > /dev/null 2>&1; then
+        rm -f "$WHEELS_DIR"/*.whl
+        echo "Removed *.whl files from $WHEELS_DIR"
+    else
+        echo "No *.whl files found in $WHEELS_DIR"
+    fi
+    
+    # Remove all .-commit files
+    if compgen -G "$WHEELS_DIR/*.-commit" > /dev/null 2>&1; then
+        rm -f "$WHEELS_DIR"/*.-commit
+        echo "Removed *.-commit files from $WHEELS_DIR"
+    else
+        echo "No *.-commit files found in $WHEELS_DIR"
+    fi
+    
+    echo "Cleanup complete."
     exit 0
 fi
 
