@@ -332,16 +332,28 @@ detect_copy_hosts() {
         _scan_subnet_for_gb10 "$cidr" "$local_iface_ip" "$temp_file"
     done
 
-    # Deduplicate and collect results
+    # Deduplicate and collect results.
+    # On two-cable setups two IB IPs may belong to the same host; deduplicate by
+    # querying each host's ETH_IF IP as a canonical identity.
     COPY_PEER_NODES=()
-    declare -A _SEEN_COPY
+    declare -A _SEEN_COPY   # keyed by IB IP
+    declare -A _SEEN_HOST   # keyed by ETH_IF IP → first IB IP seen for that host
     if [[ -f "$temp_file" ]]; then
         while read -r ip; do
-            if [[ -z "${_SEEN_COPY[$ip]}" ]]; then
-                _SEEN_COPY["$ip"]=1
-                COPY_PEER_NODES+=("$ip")
-                echo "  Found GB10 copy host: $ip"
+            [[ -n "${_SEEN_COPY[$ip]}" ]] && continue
+            _SEEN_COPY["$ip"]=1
+            # Resolve canonical host identity via ETH_IF IP
+            local host_ip
+            host_ip=$(ssh -o ConnectTimeout=3 -o StrictHostKeyChecking=no -o BatchMode=yes "$ip" \
+                "ip -o -f inet addr show $ETH_IF 2>/dev/null | awk '{print \$4}' | head -n1 | cut -d/ -f1" \
+                2>/dev/null)
+            if [[ -n "$host_ip" && -n "${_SEEN_HOST[$host_ip]}" ]]; then
+                echo "  Skipping $ip (same host as ${_SEEN_HOST[$host_ip]}, ETH_IF: $host_ip)"
+                continue
             fi
+            [[ -n "$host_ip" ]] && _SEEN_HOST["$host_ip"]="$ip"
+            COPY_PEER_NODES+=("$ip")
+            echo "  Found GB10 copy host: $ip"
         done < <(sort "$temp_file")
         rm -f "$temp_file"
     fi
