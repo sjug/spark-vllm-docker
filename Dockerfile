@@ -122,15 +122,15 @@ RUN if [ -n "$FLASHINFER_PRS" ]; then \
         done; \
     fi
 
-# TEMPORARY patch for flashinfer autotune and other improvements (PR 2927)
-RUN curl -fsL https://github.com/flashinfer-ai/flashinfer/pull/2927.diff -o pr2927.diff \
-    && if git apply --reverse --check pr2927.diff 2>/dev/null; then \
-         echo "PR #2927 already applied, skipping."; \
-       else \
-         echo "Applying FI PR #2927..."; \
-         git apply -v pr2927.diff; \
-       fi \
-    && rm pr2927.diff
+# TEMPORARY patch for flashinfer autotune and other improvements (PR 2927) - MERGED 4/3
+# RUN curl -fsL https://github.com/flashinfer-ai/flashinfer/pull/2927.diff -o pr2927.diff \
+#     && if git apply --reverse --check pr2927.diff 2>/dev/null; then \
+#          echo "PR #2927 already applied, skipping."; \
+#        else \
+#          echo "Applying FI PR #2927..."; \
+#          git apply -v pr2927.diff; \
+#        fi \
+#     && rm pr2927.diff
 
 # Apply patch to avoid re-downloading existing cubins
 COPY flashinfer_cache.patch .
